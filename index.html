@@ -1,0 +1,2070 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<title>8-TOP 3D</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #050807;
+    font-family: Arial, sans-serif;
+    touch-action: none;
+}
+
+#game {
+    position: fixed;
+    inset: 0;
+}
+
+canvas {
+    display: block;
+}
+
+#hud {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+}
+
+.top {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo,
+.scoreBox {
+    background: rgba(0,0,0,.65);
+    border: 1px solid rgba(255,255,255,.15);
+    backdrop-filter: blur(12px);
+
+    border-radius: 15px;
+    padding: 10px 14px;
+
+    color: white;
+}
+
+.logo {
+    font-weight: 900;
+    letter-spacing: 2px;
+}
+
+.scoreBox {
+    display: flex;
+    gap: 12px;
+    font-size: 13px;
+}
+
+#turn {
+    color: #55e58b;
+    font-weight: bold;
+}
+
+#message {
+    position: absolute;
+    top: 75px;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    padding: 9px 16px;
+
+    background: rgba(0,0,0,.7);
+    border: 1px solid rgba(255,255,255,.15);
+
+    border-radius: 20px;
+
+    color: white;
+    font-weight: bold;
+
+    opacity: 0;
+    transition: .25s;
+}
+
+#powerBox {
+    position: absolute;
+
+    left: 50%;
+    bottom: 22px;
+
+    transform: translateX(-50%);
+
+    width: min(380px,75vw);
+    height: 52px;
+
+    background: rgba(0,0,0,.7);
+    border: 1px solid rgba(255,255,255,.15);
+
+    border-radius: 30px;
+
+    padding: 8px;
+
+    pointer-events: auto;
+}
+
+#power {
+    width: 100%;
+    height: 100%;
+    accent-color: #35d878;
+}
+
+#powerText {
+    position: absolute;
+    inset: 0;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+
+    pointer-events: none;
+}
+
+#buttons {
+    position: absolute;
+
+    right: 15px;
+    bottom: 22px;
+
+    display: flex;
+    gap: 7px;
+
+    pointer-events: auto;
+}
+
+button {
+    color: white;
+    background: rgba(0,0,0,.65);
+
+    border: 1px solid rgba(255,255,255,.18);
+
+    padding: 11px 14px;
+
+    border-radius: 12px;
+
+    font-weight: bold;
+}
+
+button:active {
+    transform: scale(.95);
+}
+
+#help {
+    position: absolute;
+
+    left: 14px;
+    bottom: 22px;
+
+    max-width: 230px;
+
+    padding: 9px 11px;
+
+    border-radius: 12px;
+
+    background: rgba(0,0,0,.6);
+
+    color: #d7e2dc;
+
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+#start {
+    position: fixed;
+    inset: 0;
+
+    z-index: 10;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background:
+        radial-gradient(
+            circle,
+            #17472dcc,
+            #020604f5 70%
+        );
+}
+
+.startCard {
+    width: min(420px,90vw);
+
+    padding: 30px;
+
+    border-radius: 25px;
+
+    text-align: center;
+
+    background: rgba(5,15,10,.94);
+
+    border: 1px solid rgba(255,255,255,.15);
+
+    box-shadow: 0 30px 100px black;
+
+    color: white;
+}
+
+.startCard h1 {
+    font-size: 42px;
+    margin-bottom: 8px;
+}
+
+.startCard p {
+    color: #aebbb4;
+    line-height: 1.5;
+    margin-bottom: 22px;
+}
+
+.playButton {
+    background: linear-gradient(
+        135deg,
+        #27c96a,
+        #087b3d
+    );
+
+    font-size: 16px;
+
+    padding: 14px 25px;
+
+    border-radius: 15px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="game"></div>
+
+<div id="hud">
+
+    <div class="top">
+
+        <div class="logo">
+            🎱 8-TOP 3D
+        </div>
+
+        <div class="scoreBox">
+
+            <span>
+                SEN:
+                <b id="playerScore">0</b>
+            </span>
+
+            <span>
+                RAKİP:
+                <b id="enemyScore">0</b>
+            </span>
+
+            <span id="turn">
+                SIRA: SEN
+            </span>
+
+        </div>
+
+    </div>
+
+    <div id="message"></div>
+
+    <div id="help">
+        🎯 Topa nişan almak için sürükle.<br>
+        💪 Gücü alttaki çubuktan ayarla.<br>
+        🎱 Bıraktığında vuruş yapılır.
+    </div>
+
+    <div id="powerBox">
+
+        <input
+            id="power"
+            type="range"
+            min="0.05"
+            max="1"
+            value="0.60"
+            step="0.01"
+        >
+
+        <div id="powerText">
+            GÜÇ %60
+        </div>
+
+    </div>
+
+    <div id="buttons">
+
+        <button id="newGame">
+            ↻ Yeni Oyun
+        </button>
+
+        <button id="cameraButton">
+            ◉ Kamera
+        </button>
+
+    </div>
+
+</div>
+
+<div id="start">
+
+    <div class="startCard">
+
+        <h1>🎱 8-TOP</h1>
+
+        <p>
+            Gerçekçi 3D bilardo masası,
+            fizik tabanlı top hareketleri,
+            cepler ve rakip yapay zekâ.
+        </p>
+
+        <button
+            id="playButton"
+            class="playButton"
+        >
+            OYUNA BAŞLA
+        </button>
+
+    </div>
+
+</div>
+
+
+<script type="module">
+
+import * as THREE from
+"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+
+
+/* =========================================================
+   SAHNE
+========================================================= */
+
+const scene = new THREE.Scene();
+
+scene.background =
+    new THREE.Color(0x050807);
+
+scene.fog =
+    new THREE.Fog(
+        0x050807,
+        4,
+        9
+    );
+
+
+/* =========================================================
+   KAMERA
+========================================================= */
+
+const camera =
+    new THREE.PerspectiveCamera(
+        42,
+        innerWidth / innerHeight,
+        .03,
+        50
+    );
+
+camera.position.set(
+    0,
+    3.2,
+    3.5
+);
+
+camera.lookAt(
+    0,
+    0,
+    0
+);
+
+
+/* =========================================================
+   RENDERER
+========================================================= */
+
+const renderer =
+    new THREE.WebGLRenderer({
+        antialias: true,
+        powerPreference: "high-performance"
+    });
+
+renderer.setPixelRatio(
+    Math.min(
+        devicePixelRatio,
+        2
+    )
+);
+
+renderer.setSize(
+    innerWidth,
+    innerHeight
+);
+
+renderer.shadowMap.enabled = true;
+
+renderer.shadowMap.type =
+    THREE.PCFSoftShadowMap;
+
+renderer.toneMapping =
+    THREE.ACESFilmicToneMapping;
+
+renderer.toneMappingExposure =
+    1.2;
+
+document
+    .getElementById("game")
+    .appendChild(renderer.domElement);
+
+
+/* =========================================================
+   IŞIKLAR
+========================================================= */
+
+scene.add(
+    new THREE.HemisphereLight(
+        0xbddcff,
+        0x172018,
+        2
+    )
+);
+
+const mainLight =
+    new THREE.DirectionalLight(
+        0xfff2d5,
+        4.5
+    );
+
+mainLight.position.set(
+    -2.5,
+    4.8,
+    2
+);
+
+mainLight.castShadow = true;
+
+mainLight.shadow.mapSize.width = 2048;
+mainLight.shadow.mapSize.height = 2048;
+
+scene.add(mainLight);
+
+
+const greenLight =
+    new THREE.PointLight(
+        0x44e78b,
+        1.7,
+        6
+    );
+
+greenLight.position.set(
+    0,
+    1.8,
+    0
+);
+
+scene.add(greenLight);
+
+
+/* =========================================================
+   ZEMİN
+========================================================= */
+
+const floor =
+    new THREE.Mesh(
+        new THREE.PlaneGeometry(
+            10,
+            10
+        ),
+
+        new THREE.MeshStandardMaterial({
+            color: 0x080c0a,
+            roughness: .85
+        })
+    );
+
+floor.rotation.x =
+    -Math.PI / 2;
+
+floor.position.y =
+    -.13;
+
+floor.receiveShadow = true;
+
+scene.add(floor);
+
+
+/* =========================================================
+   BİLARDO MASASI
+========================================================= */
+
+const TABLE_WIDTH = 2.05;
+const TABLE_HEIGHT = 1.03;
+
+const BALL_RADIUS = .035;
+const POCKET_RADIUS = .105;
+
+
+const table =
+    new THREE.Group();
+
+scene.add(table);
+
+
+/* Ahşap */
+
+const woodMaterial =
+    new THREE.MeshStandardMaterial({
+        color: 0x32190c,
+        roughness: .3
+    });
+
+
+const darkWoodMaterial =
+    new THREE.MeshStandardMaterial({
+        color: 0x5a2d13,
+        roughness: .25
+    });
+
+
+const feltMaterial =
+    new THREE.MeshStandardMaterial({
+        color: 0x087341,
+        roughness: .9
+    });
+
+
+function addBox(
+    width,
+    height,
+    depth,
+    material,
+    x,
+    y,
+    z
+) {
+
+    const mesh =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                width,
+                height,
+                depth
+            ),
+            material
+        );
+
+    mesh.position.set(
+        x,
+        y,
+        z
+    );
+
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+
+    table.add(mesh);
+
+    return mesh;
+}
+
+
+addBox(
+    TABLE_WIDTH + .42,
+    .18,
+    TABLE_HEIGHT + .42,
+    woodMaterial,
+    0,
+    .02,
+    0
+);
+
+
+addBox(
+    TABLE_WIDTH + .27,
+    .13,
+    TABLE_HEIGHT + .27,
+    darkWoodMaterial,
+    0,
+    .13,
+    0
+);
+
+
+/* Kumaş */
+
+const felt =
+    new THREE.Mesh(
+        new THREE.BoxGeometry(
+            TABLE_WIDTH,
+            .045,
+            TABLE_HEIGHT
+        ),
+        feltMaterial
+    );
+
+felt.position.y =
+    .205;
+
+felt.receiveShadow = true;
+
+table.add(felt);
+
+
+/* =========================================================
+   BANTLAR
+========================================================= */
+
+addBox(
+    TABLE_WIDTH + .10,
+    .10,
+    .10,
+    darkWoodMaterial,
+    0,
+    .255,
+    -TABLE_HEIGHT / 2 - .025
+);
+
+addBox(
+    TABLE_WIDTH + .10,
+    .10,
+    .10,
+    darkWoodMaterial,
+    0,
+    .255,
+    TABLE_HEIGHT / 2 + .025
+);
+
+addBox(
+    .10,
+    .10,
+    TABLE_HEIGHT + .10,
+    darkWoodMaterial,
+    -TABLE_WIDTH / 2 - .025,
+    .255,
+    0
+);
+
+addBox(
+    .10,
+    .10,
+    TABLE_HEIGHT + .10,
+    darkWoodMaterial,
+    TABLE_WIDTH / 2 + .025,
+    .255,
+    0
+);
+
+
+/* =========================================================
+   CEPLER
+========================================================= */
+
+const pocketMaterial =
+    new THREE.MeshStandardMaterial({
+        color: 0x010202,
+        roughness: 1
+    });
+
+
+const pocketPositions = [
+
+    [-TABLE_WIDTH / 2, -TABLE_HEIGHT / 2],
+
+    [0, -TABLE_HEIGHT / 2],
+
+    [TABLE_WIDTH / 2, -TABLE_HEIGHT / 2],
+
+    [-TABLE_WIDTH / 2, TABLE_HEIGHT / 2],
+
+    [0, TABLE_HEIGHT / 2],
+
+    [TABLE_WIDTH / 2, TABLE_HEIGHT / 2]
+
+];
+
+
+for (
+    const [x,z]
+    of pocketPositions
+) {
+
+    const pocket =
+        new THREE.Mesh(
+            new THREE.CylinderGeometry(
+                POCKET_RADIUS,
+                POCKET_RADIUS,
+                .055,
+                32
+            ),
+            pocketMaterial
+        );
+
+    pocket.rotation.x =
+        Math.PI / 2;
+
+    pocket.position.set(
+        x,
+        .235,
+        z
+    );
+
+    table.add(pocket);
+}
+
+
+/* =========================================================
+   TOPLAR
+========================================================= */
+
+const ballGroup =
+    new THREE.Group();
+
+scene.add(ballGroup);
+
+
+const colors = [
+
+    0xffffff,
+    0xe7bd2c,
+    0x1766d1,
+    0xd62e35,
+    0x7d2ca8,
+    0xef7825,
+    0x17854c,
+    0x8d2634,
+    0x080808,
+    0xe7bd2c,
+    0x1766d1,
+    0xd62e35,
+    0x7d2ca8,
+    0xef7825,
+    0x17854c,
+    0x8d2634
+
+];
+
+
+const balls = [];
+
+
+function createBall(
+    number,
+    x,
+    z
+) {
+
+    const group =
+        new THREE.Group();
+
+
+    const material =
+        new THREE.MeshStandardMaterial({
+            color: colors[number],
+            roughness: .17,
+            metalness: .03
+        });
+
+
+    const sphere =
+        new THREE.Mesh(
+            new THREE.SphereGeometry(
+                BALL_RADIUS,
+                32,
+                20
+            ),
+            material
+        );
+
+    sphere.castShadow = true;
+    sphere.receiveShadow = true;
+
+    group.add(sphere);
+
+
+    /*
+       Beyaz bant
+       8 numarada özel işaret
+    */
+
+    if (number !== 0) {
+
+        const ring =
+            new THREE.Mesh(
+                new THREE.CylinderGeometry(
+                    BALL_RADIUS * .53,
+                    BALL_RADIUS * .53,
+                    .006,
+                    32
+                ),
+
+                new THREE.MeshStandardMaterial({
+                    color: 0xffffff,
+                    roughness: .6
+                })
+            );
+
+        ring.rotation.x =
+            Math.PI / 2;
+
+        ring.position.y =
+            .008;
+
+        group.add(ring);
+    }
+
+
+    group.position.set(
+        x,
+        .265,
+        z
+    );
+
+    ballGroup.add(group);
+
+
+    const ball = {
+
+        number,
+
+        x,
+        z,
+
+        vx: 0,
+        vz: 0,
+
+        active: true,
+
+        mesh: group
+
+    };
+
+
+    balls.push(ball);
+
+    return ball;
+}
+
+
+/* =========================================================
+   RACK
+========================================================= */
+
+let cueBall;
+
+
+function createRack() {
+
+    balls.forEach(
+        ball =>
+            ballGroup.remove(
+                ball.mesh
+            )
+    );
+
+    balls.length = 0;
+
+
+    const positions = [
+
+        [0,-.43],
+
+        [0,-.35],
+        [-.035,-.29],
+        [.035,-.29],
+
+        [-.07,-.23],
+        [0,-.23],
+        [.07,-.23],
+
+        [-.105,-.17],
+        [-.035,-.17],
+        [.035,-.17],
+        [.105,-.17],
+
+        [-.07,-.11],
+        [0,-.11],
+        [.07,-.11],
+
+        [0,-.05]
+
+    ];
+
+
+    positions.forEach(
+        (position,index) => {
+
+            createBall(
+                index + 1,
+                position[0],
+                position[1]
+            );
+
+        }
+    );
+
+
+    cueBall =
+        createBall(
+            0,
+            0,
+            .38
+        );
+}
+
+
+createRack();
+
+
+/* =========================================================
+   OYUN DEĞİŞKENLERİ
+========================================================= */
+
+let playerScore = 0;
+let enemyScore = 0;
+
+let turn = "player";
+
+let aiming = true;
+
+let dragging = false;
+
+let angle = 0;
+
+let cameraMode = 0;
+
+let shots = 0;
+
+
+/* =========================================================
+   GÜÇ
+========================================================= */
+
+const power =
+    document.getElementById(
+        "power"
+    );
+
+const powerText =
+    document.getElementById(
+        "powerText"
+    );
+
+
+power.addEventListener(
+    "input",
+    () => {
+
+        powerText.textContent =
+            "GÜÇ %" +
+            Math.round(
+                power.value * 100
+            );
+
+    }
+);
+
+
+/* =========================================================
+   MESAJ
+========================================================= */
+
+function message(text) {
+
+    const element =
+        document.getElementById(
+            "message"
+        );
+
+    element.textContent =
+        text;
+
+    element.style.opacity =
+        1;
+
+    clearTimeout(
+        message.timer
+    );
+
+    message.timer =
+        setTimeout(
+            () => {
+
+                element.style.opacity =
+                    0;
+
+            },
+            1700
+        );
+}
+
+
+/* =========================================================
+   SKOR / TUR
+========================================================= */
+
+function updateHUD() {
+
+    document.getElementById(
+        "playerScore"
+    ).textContent =
+        playerScore;
+
+
+    document.getElementById(
+        "enemyScore"
+    ).textContent =
+        enemyScore;
+
+
+    document.getElementById(
+        "turn"
+    ).textContent =
+        turn === "player"
+            ? "SIRA: SEN"
+            : "SIRA: RAKİP";
+}
+
+
+/* =========================================================
+   TOPLAM HIZ
+========================================================= */
+
+function totalSpeed() {
+
+    let total = 0;
+
+    for (
+        const ball
+        of balls
+    ) {
+
+        total +=
+            Math.hypot(
+                ball.vx,
+                ball.vz
+            );
+
+    }
+
+    return total;
+}
+
+
+/* =========================================================
+   DUVAR ÇARPIŞMASI
+========================================================= */
+
+function wallCollision(ball) {
+
+    const radius =
+        BALL_RADIUS * .92;
+
+
+    if (
+        ball.x <
+        -TABLE_WIDTH / 2 + radius
+    ) {
+
+        ball.x =
+            -TABLE_WIDTH / 2 + radius;
+
+        ball.vx =
+            Math.abs(ball.vx) * .82;
+    }
+
+
+    if (
+        ball.x >
+        TABLE_WIDTH / 2 - radius
+    ) {
+
+        ball.x =
+            TABLE_WIDTH / 2 - radius;
+
+        ball.vx =
+            -Math.abs(ball.vx) * .82;
+    }
+
+
+    if (
+        ball.z <
+        -TABLE_HEIGHT / 2 + radius
+    ) {
+
+        ball.z =
+            -TABLE_HEIGHT / 2 + radius;
+
+        ball.vz =
+            Math.abs(ball.vz) * .82;
+    }
+
+
+    if (
+        ball.z >
+        TABLE_HEIGHT / 2 - radius
+    ) {
+
+        ball.z =
+            TABLE_HEIGHT / 2 - radius;
+
+        ball.vz =
+            -Math.abs(ball.vz) * .82;
+    }
+}
+
+
+/* =========================================================
+   CEP KONTROLÜ
+========================================================= */
+
+function isPocketed(ball) {
+
+    for (
+        const [x,z]
+        of pocketPositions
+    ) {
+
+        if (
+            Math.hypot(
+                ball.x - x,
+                ball.z - z
+            ) <
+            POCKET_RADIUS * .85
+        ) {
+
+            return true;
+
+        }
+
+    }
+
+    return false;
+}
+
+
+/* =========================================================
+   ATIŞ
+========================================================= */
+
+function shoot() {
+
+    if (
+        turn !== "player" ||
+        !aiming ||
+        !cueBall.active
+    ) {
+
+        return;
+
+    }
+
+
+    const strength =
+        Number(power.value);
+
+
+    cueBall.vx =
+        Math.sin(angle) *
+        strength *
+        .95;
+
+
+    cueBall.vz =
+        Math.cos(angle) *
+        strength *
+        .95;
+
+
+    aiming = false;
+
+    shots++;
+
+    message(
+        "🎱 Vuruş!"
+    );
+}
+
+
+/* =========================================================
+   FİZİK
+========================================================= */
+
+function physics(dt) {
+
+
+    /*
+       Hareket
+    */
+
+    for (
+        const ball
+        of balls
+    ) {
+
+        if (!ball.active)
+            continue;
+
+
+        ball.x +=
+            ball.vx * dt;
+
+        ball.z +=
+            ball.vz * dt;
+
+
+        /*
+           Sürtünme
+        */
+
+        const friction =
+            Math.pow(
+                .993,
+                dt * 60
+            );
+
+
+        ball.vx *=
+            friction;
+
+        ball.vz *=
+            friction;
+
+
+        if (
+            Math.hypot(
+                ball.vx,
+                ball.vz
+            ) < .008
+        ) {
+
+            ball.vx = 0;
+            ball.vz = 0;
+
+        }
+
+
+        wallCollision(
+            ball
+        );
+
+    }
+
+
+    /*
+       Top-top çarpışması
+    */
+
+    for (
+        let i = 0;
+        i < balls.length;
+        i++
+    ) {
+
+        for (
+            let j = i + 1;
+            j < balls.length;
+            j++
+        ) {
+
+            const a = balls[i];
+            const b = balls[j];
+
+
+            if (
+                !a.active ||
+                !b.active
+            )
+                continue;
+
+
+            const dx =
+                b.x - a.x;
+
+            const dz =
+                b.z - a.z;
+
+
+            const distance =
+                Math.hypot(
+                    dx,
+                    dz
+                );
+
+
+            const minimum =
+                BALL_RADIUS * 2;
+
+
+            if (
+                distance <
+                minimum &&
+                distance > .0001
+            ) {
+
+                const nx =
+                    dx / distance;
+
+                const nz =
+                    dz / distance;
+
+
+                const overlap =
+                    minimum -
+                    distance;
+
+
+                a.x -=
+                    nx *
+                    overlap /
+                    2;
+
+                a.z -=
+                    nz *
+                    overlap /
+                    2;
+
+
+                b.x +=
+                    nx *
+                    overlap /
+                    2;
+
+                b.z +=
+                    nz *
+                    overlap /
+                    2;
+
+
+                const rvx =
+                    b.vx - a.vx;
+
+                const rvz =
+                    b.vz - a.vz;
+
+
+                const relative =
+                    rvx * nx +
+                    rvz * nz;
+
+
+                if (
+                    relative < 0
+                ) {
+
+                    const impulse =
+                        -1.92 *
+                        relative /
+                        2;
+
+
+                    a.vx -=
+                        impulse * nx;
+
+                    a.vz -=
+                        impulse * nz;
+
+
+                    b.vx +=
+                        impulse * nx;
+
+                    b.vz +=
+                        impulse * nz;
+
+                }
+
+            }
+
+        }
+
+    }
+
+
+    /*
+       Cepler
+    */
+
+    for (
+        const ball
+        of balls
+    ) {
+
+        if (
+            !ball.active
+        )
+            continue;
+
+
+        if (
+            isPocketed(ball)
+        ) {
+
+            ball.active =
+                false;
+
+            ball.vx = 0;
+            ball.vz = 0;
+
+            ball.mesh.visible =
+                false;
+
+
+            if (
+                ball.number === 8
+            ) {
+
+                if (
+                    turn === "player"
+                ) {
+
+                    playerScore++;
+
+                } else {
+
+                    enemyScore++;
+
+                }
+
+
+                updateHUD();
+
+                message(
+                    "🎱 8 numara cebe girdi!"
+                );
+
+            }
+
+            else if (
+                ball.number === 0
+            ) {
+
+                message(
+                    "⚠️ Faul!"
+                );
+
+
+                setTimeout(
+                    () => {
+
+                        ball.active =
+                            true;
+
+                        ball.mesh.visible =
+                            true;
+
+                        ball.x = 0;
+                        ball.z = .38;
+
+                    },
+                    700
+                );
+
+            }
+
+            else {
+
+                if (
+                    turn === "player"
+                )
+                    playerScore++;
+                else
+                    enemyScore++;
+
+
+                updateHUD();
+
+            }
+
+        }
+
+    }
+
+
+    /*
+       Görsel pozisyon
+    */
+
+    for (
+        const ball
+        of balls
+    ) {
+
+        if (
+            ball.active
+        ) {
+
+            ball.mesh.position.x =
+                ball.x;
+
+            ball.mesh.position.z =
+                ball.z;
+
+        }
+
+    }
+
+
+    /*
+       Tüm toplar durdu
+    */
+
+    if (
+        totalSpeed() < .012 &&
+        !aiming &&
+        shots > 0
+    ) {
+
+        aiming = true;
+
+
+        if (
+            turn === "player"
+        ) {
+
+            turn =
+                "ai";
+
+            updateHUD();
+
+
+            setTimeout(
+                aiShot,
+                700
+            );
+
+        }
+
+        else {
+
+            turn =
+                "player";
+
+            updateHUD();
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   YAPAY ZEKÂ
+========================================================= */
+
+function aiShot() {
+
+    if (
+        turn !== "ai" ||
+        !cueBall.active
+    )
+        return;
+
+
+    let target =
+        balls.find(
+            ball =>
+                ball.active &&
+                ball.number !== 0 &&
+                ball.number !== 8
+        );
+
+
+    if (!target) {
+
+        turn =
+            "player";
+
+        aiming = true;
+
+        updateHUD();
+
+        return;
+
+    }
+
+
+    const dx =
+        target.x -
+        cueBall.x;
+
+    const dz =
+        target.z -
+        cueBall.z;
+
+
+    const aiAngle =
+        Math.atan2(
+            dx,
+            dz
+        );
+
+
+    cueBall.vx =
+        Math.sin(aiAngle) *
+        .62;
+
+    cueBall.vz =
+        Math.cos(aiAngle) *
+        .62;
+
+
+    aiming = false;
+
+    message(
+        "🤖 Rakip vuruyor..."
+    );
+
+}
+
+
+/* =========================================================
+   RAYCASTER
+========================================================= */
+
+function getTablePoint(event) {
+
+    const raycaster =
+        new THREE.Raycaster();
+
+
+    const mouse =
+        new THREE.Vector2(
+
+            event.clientX /
+                innerWidth *
+                2 - 1,
+
+            -(event.clientY /
+                innerHeight *
+                2 - 1)
+
+        );
+
+
+    raycaster.setFromCamera(
+        mouse,
+        camera
+    );
+
+
+    const plane =
+        new THREE.Plane(
+            new THREE.Vector3(
+                0,
+                1,
+                0
+            ),
+            -.265
+        );
+
+
+    const point =
+        new THREE.Vector3();
+
+
+    raycaster.ray.intersectPlane(
+        plane,
+        point
+    );
+
+
+    return point;
+}
+
+
+/* =========================================================
+   DOKUNMATİK NİŞAN
+========================================================= */
+
+renderer.domElement.addEventListener(
+    "pointerdown",
+    event => {
+
+        if (
+            turn !== "player" ||
+            !aiming
+        )
+            return;
+
+
+        dragging = true;
+
+    }
+);
+
+
+renderer.domElement.addEventListener(
+    "pointermove",
+    event => {
+
+        if (
+            !dragging ||
+            !cueBall
+        )
+            return;
+
+
+        const point =
+            getTablePoint(
+                event
+            );
+
+
+        const dx =
+            point.x -
+            cueBall.x;
+
+        const dz =
+            point.z -
+            cueBall.z;
+
+
+        if (
+            Math.hypot(
+                dx,
+                dz
+            ) > .02
+        ) {
+
+            angle =
+                Math.atan2(
+                    dx,
+                    dz
+                );
+
+        }
+
+    }
+);
+
+
+renderer.domElement.addEventListener(
+    "pointerup",
+    () => {
+
+        if (
+            !dragging
+        )
+            return;
+
+
+        dragging = false;
+
+        shoot();
+
+    }
+);
+
+
+/* =========================================================
+   NİŞAN ÇİZGİSİ
+========================================================= */
+
+let aimLine;
+
+
+function drawAim() {
+
+    if (
+        turn !== "player" ||
+        !aiming ||
+        !cueBall.active
+    ) {
+
+        if (aimLine)
+            aimLine.visible = false;
+
+        return;
+
+    }
+
+
+    if (!aimLine) {
+
+        aimLine =
+            new THREE.Line(
+                new THREE.BufferGeometry(),
+
+                new THREE.LineBasicMaterial({
+                    color: 0xffffff,
+                    transparent: true,
+                    opacity: .65
+                })
+            );
+
+        scene.add(
+            aimLine
+        );
+
+    }
+
+
+    aimLine.visible = true;
+
+
+    const direction =
+        new THREE.Vector3(
+            Math.sin(angle),
+            0,
+            Math.cos(angle)
+        );
+
+
+    const start =
+        new THREE.Vector3(
+            cueBall.x,
+            .29,
+            cueBall.z
+        );
+
+
+    const end =
+        start.clone()
+            .addScaledVector(
+                direction,
+                1.2
+            );
+
+
+    aimLine.geometry
+        .setFromPoints([
+            start,
+            end
+        ]);
+
+}
+
+
+/* =========================================================
+   KAMERA
+========================================================= */
+
+function updateCamera() {
+
+    if (
+        cameraMode === 0
+    ) {
+
+        camera.position.lerp(
+            new THREE.Vector3(
+                0,
+                3.0,
+                3.25
+            ),
+            .05
+        );
+
+        camera.lookAt(
+            0,
+            .1,
+            0
+        );
+
+    }
+
+
+    if (
+        cameraMode === 1
+    ) {
+
+        camera.position.lerp(
+            new THREE.Vector3(
+                cueBall.x * 1.2,
+                1.4,
+                cueBall.z + 1.5
+            ),
+            .06
+        );
+
+        camera.lookAt(
+            cueBall.x,
+            .18,
+            cueBall.z
+        );
+
+    }
+
+
+    if (
+        cameraMode === 2
+    ) {
+
+        camera.position.lerp(
+            new THREE.Vector3(
+                0,
+                4.2,
+                .05
+            ),
+            .05
+        );
+
+        camera.lookAt(
+            0,
+            0,
+            0
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   BUTONLAR
+========================================================= */
+
+document
+    .getElementById("newGame")
+    .onclick = () => {
+
+        playerScore = 0;
+        enemyScore = 0;
+
+        turn = "player";
+
+        aiming = true;
+
+        shots = 0;
+
+        createRack();
+
+        updateHUD();
+
+        message(
+            "🎱 Yeni oyun!"
+        );
+
+    };
+
+
+document
+    .getElementById("cameraButton")
+    .onclick = () => {
+
+        cameraMode++;
+
+        if (
+            cameraMode > 2
+        )
+            cameraMode = 0;
+
+
+        const names = [
+
+            "Klasik kamera",
+
+            "Yakın kamera",
+
+            "Üst kamera"
+
+        ];
+
+
+        message(
+            names[cameraMode]
+        );
+
+    };
+
+
+document
+    .getElementById("playButton")
+    .onclick = () => {
+
+        document
+            .getElementById("start")
+            .style.display = "none";
+
+        message(
+            "🎯 Nişan al ve vur!"
+        );
+
+    };
+
+
+/* =========================================================
+   ANİMASYON
+========================================================= */
+
+const clock =
+    new THREE.Clock();
+
+
+function animate() {
+
+    requestAnimationFrame(
+        animate
+    );
+
+
+    const dt =
+        Math.min(
+            clock.getDelta(),
+            .025
+        );
+
+
+    physics(dt);
+
+    drawAim();
+
+    updateCamera();
+
+
+    renderer.render(
+        scene,
+        camera
+    );
+
+}
+
+
+animate();
+
+
+/* =========================================================
+   EKRAN BOYUTU
+========================================================= */
+
+window.addEventListener(
+    "resize",
+    () => {
+
+        camera.aspect =
+            innerWidth /
+            innerHeight;
+
+        camera.updateProjectionMatrix();
+
+
+        renderer.setSize(
+            innerWidth,
+            innerHeight
+        );
+
+    }
+);
+
+
+updateHUD();
+
+</script>
+
+</body>
+</html>
