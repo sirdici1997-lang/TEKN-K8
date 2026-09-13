@@ -1,1 +1,1 @@
-# TEKN-K8
+# TEKNİK-8
